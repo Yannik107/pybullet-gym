@@ -41,6 +41,7 @@ class WalkerBase(XmlBasedRobot):
         self.body_xyz = (
             parts_xyz[0::3].mean(), parts_xyz[1::3].mean(), body_pose.xyz()[2])  # torso z is more informative than mean z
         self.body_rpy = body_pose.rpy()
+        x = self.body_xyz[0]
         z = self.body_xyz[2]
         if self.initial_z is None:
             self.initial_z = z
@@ -61,8 +62,16 @@ class WalkerBase(XmlBasedRobot):
         more = np.array([z-self.initial_z,
                           np.sin(angle_to_target), np.cos(angle_to_target),
                           0.3 * vx, 0.3 * vy, 0.3 * vz,  # 0.3 is just scaling typical speed into -1..+1, no physical sense here
-                          r, p], dtype=np.float32)
-        return np.clip(np.concatenate([more] + [j] + [self.feet_contact]), -5, +5)
+                          r, p, x, z], dtype=np.float32)
+
+        # old original implementation
+        # return np.clip(np.concatenate([more] + [j] + [self.feet_contact]), -5, +5)
+
+        # # new changed implementation
+        state = np.clip(np.concatenate([more] + [j] + [self.feet_contact]), -5, +5)
+        state[8] = x
+        state[9] = z
+        return state
 
     def calc_potential(self):
         # progress in potential field is speed*dt, typical speed is about 2-3 meter per second, this potential will change 2-3 per frame (not per second),
